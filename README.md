@@ -1,8 +1,8 @@
-# 🍬 Candy Rush
+# 🍬 Endless Candy Runner (working title)
 
 A colourful endless-runner game for mobile. Switch lanes, jump over gummy bars and slide under candy-cane arches to collect candy and coins.
 
-**Play it:** https://alexanderjacksonproes.github.io/candy-rush/
+**Play it:** https://alexanderjacksonproes.github.io/endless-candy-runner/
 
 ## Features
 - ∞ Infinite Run mode with a score multiplier
