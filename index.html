@@ -141,6 +141,28 @@
   @keyframes rot { 0%,30%{transform:rotate(-90deg)} 60%,100%{transform:rotate(0)} }
   @media (orientation:landscape) and (max-height:500px) and (pointer:coarse){ #rotate { display:flex; } }
   .btn:disabled { opacity:.6; }
+
+  /* ---- daily run, daily reward, upgrades ---- */
+  #ageYear { font-size:20px; font-weight:bold; padding:12px 18px; border-radius:14px; border:none; margin-top:6px;
+             background:#fff; color:#3a2b5f; min-width:200px; text-align:center; }
+  .btn.day { background:linear-gradient(135deg,#4facfe,#7b2ff7); }
+  .btn.day.locked { opacity:.55; }
+  #dailyGrid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; width:100%; max-width:340px; margin:12px 0; }
+  .dtile { background:rgba(255,255,255,.12); border:2px solid transparent; border-radius:12px; padding:8px 4px; font-weight:bold; font-size:12px; }
+  .dtile .amt { font-size:15px; margin-top:3px; }
+  .dtile.got { background:rgba(102,187,106,.28); opacity:.85; }
+  .dtile.today { border-color:#ffd54a; background:rgba(255,213,74,.22); animation:dpulse 1.2s ease-in-out infinite; }
+  .dtile.big { grid-column:span 2; }
+  @keyframes dpulse { 50%{ transform:scale(1.06); } }
+  #upgList { width:100%; max-width:360px; margin:10px 0; }
+  .ucard { display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.12); border-radius:14px; padding:10px 12px; margin-bottom:8px; text-align:left; }
+  .ucard .ue { font-size:28px; width:36px; text-align:center; }
+  .ucard .ui { flex:1; } .ucard .un { font-weight:900; font-size:15px; } .ucard .ud { font-size:12px; opacity:.85; margin-top:2px; }
+  .ucard .pips { color:#ffd54a; letter-spacing:2px; font-size:13px; margin-top:2px; }
+  .ucard button { border:none; border-radius:20px; padding:8px 12px; font-weight:900; font-size:13px; cursor:pointer;
+                  background:linear-gradient(135deg,#ffb347,#ff8f00); color:#4a2c00; min-width:76px; }
+  .ucard button.max { background:rgba(255,255,255,.2); color:#fff; }
+  .ucard button.poor { opacity:.5; }
   #setRows .btn.sm { min-width:150px; }
 </style>
 </head>
@@ -152,7 +174,7 @@
     <div><div id="scoreLabel">SCORE<span id="multTag">×1</span></div><div id="score">0</div></div>
     <div id="candyHud">🍬 <span id="candy">0</span><br>🪙 <span id="coins">0</span></div>
   </div>
-  <div id="missionHud"><div id="mhText">🎯</div><div class="bar"><div class="fill" id="mhFill"></div></div></div>
+  <div id="missionHud"><div id="mhText">🎯</div><div class="bar" id="mhBar"><div class="fill" id="mhFill"></div></div></div>
   <div id="powerBar"></div>
   <div id="comboTag"></div>
   <button id="pauseBtn" aria-label="Pause"></button>
@@ -164,8 +186,10 @@
     <p>Dodge, jump and slide<br>through Candy Land!</p>
     <button class="btn" id="startBtn">∞ Infinite Run</button>
     <button class="btn mis" id="missionsBtn">🎯 Missions</button>
+    <button class="btn day" id="dailyRunBtn">📅 Daily Run</button>
+    <button class="btn sm" id="mysteryBtn" style="display:none">🎁 Free reward · coins or a boost</button>
     <div class="subline" id="startStats">Score multiplier ×1 · Missions 0/15</div>
-    <div class="row"><button class="btn sm" id="skinsBtn">🎨 Skins</button><button class="btn sm" id="bgBtn">🖼️ Backgrounds</button><button class="btn sm" id="settingsBtn">⚙️ Settings</button></div>
+    <div class="row"><button class="btn sm" id="skinsBtn">🎨 Skins</button><button class="btn sm" id="bgBtn">🖼️ Backgrounds</button><button class="btn sm" id="upgBtn">⬆️ Upgrades</button><button class="btn sm" id="settingsBtn">⚙️ Settings</button></div>
     <div class="hint" id="startHint">Swipe ← → to switch lanes, ↑ to jump, ↓ to slide.<br>Keyboard: arrows / WASD / Space.<br>🧲 magnet · 🛡️ shield · ✨ 2× score</div>
   </div>
 
@@ -175,10 +199,11 @@
     <div class="statline">Score: <b id="finalScore">0</b></div>
     <div class="statline">Candy: <b id="finalCandy">0</b> 🍬 · Coins: <b id="finalCoins">0</b> 🪙</div>
     <div class="statline">Best: <b id="bestScore">0</b></div>
+    <div class="statline" id="reviveHint" style="color:#ffd54a;font-weight:bold;margin-top:6px"></div>
     <button class="btn rev" id="reviveBtn">📺 Revive (watch ad)</button>
     <button class="btn dbl" id="doubleBtn">📺 Double coins (watch ad)</button>
     <button class="btn" id="retryBtn">↻ Play again</button>
-    <div class="row"><button class="btn sm" id="menuBtn">🏠 Menu</button><button class="btn sm" id="missionsBtn2">🎯 Missions</button><button class="btn sm" id="skinsBtn2">🎨 Skins</button><button class="btn sm" id="bgBtn2">🖼️ Backgrounds</button></div>
+    <div class="row"><button class="btn sm" id="menuBtn">🏠 Menu</button><button class="btn sm" id="missionsBtn2">🎯 Missions</button><button class="btn sm" id="skinsBtn2">🎨 Skins</button><button class="btn sm" id="bgBtn2">🖼️ Backgrounds</button><button class="btn sm" id="upgBtn2">⬆️ Upgrades</button></div>
   </div>
 
   <div id="missionsScreen" class="overlay hide">
@@ -204,10 +229,42 @@
     <button class="btn" id="resumeBtn">▶ Resume</button>
     <div id="setRows">
       <div class="row"><button class="btn sm" id="setSound">🔊 Sound: On</button><button class="btn sm" id="setHaptics">📳 Vibration: On</button></div>
-      <div class="row"><button class="btn sm" id="setGfx">✨ Graphics: Auto</button></div>
+      <div class="row"><button class="btn sm" id="setMusic">🎵 Music: On</button><button class="btn sm" id="setGfx">✨ Graphics: Auto</button></div>
+      <div class="row"><button class="btn sm" id="setAssist">🌱 Easy start: Auto</button><button class="btn sm" id="setStats" style="display:none">📊 Share stats: Off</button></div>
+      <div class="row"><button class="btn sm" id="setPrivacy">📄 Privacy policy</button><button class="btn sm" id="setAdPrivacy" style="display:none">🔒 Ad privacy choices</button></div>
     </div>
     <div class="row" id="pauseNav"><button class="btn sm" id="restartBtn">↻ Restart</button><button class="btn sm" id="pauseMenuBtn">🏠 Menu</button></div>
     <button class="btn" id="settingsBack">← Back</button>
+  </div>
+
+  <div id="statsScreen" class="overlay hide">
+    <h2>📊 Help improve the game?</h2>
+    <p>Share anonymous gameplay stats, like how far runs go and which rewards people pick.<br>No name, email or contacts — ever.<br>You can change this any time in Settings.</p>
+    <div class="row"><button class="btn sm" id="statsYes">Yes, share stats</button><button class="btn sm" id="statsNo">No thanks</button></div>
+  </div>
+
+  <div id="ageScreen" class="overlay hide">
+    <h2>👋 Welcome!</h2>
+    <p>What year were you born?</p>
+    <select id="ageYear" aria-label="Birth year"></select>
+    <button class="btn" id="ageGo" disabled>Continue</button>
+  </div>
+
+  <div id="dailyScreen" class="overlay hide">
+    <h2>🎁 Daily Reward</h2>
+    <div class="subline" id="dailyStreak"></div>
+    <div id="dailyGrid"></div>
+    <button class="btn" id="dailyClaim">Claim</button>
+    <button class="btn dbl" id="dailyDouble">📺 Double it (watch ad)</button>
+    <button class="btn sm" id="dailyClose">Continue</button>
+  </div>
+
+  <div id="upgScreen" class="overlay hide">
+    <h2>⬆️ Upgrades</h2>
+    <div class="wallet">🪙 <span id="upgWallet">0</span></div>
+    <div class="subline" style="margin-top:0">Power-ups last longer and turn up more often — forever.</div>
+    <div id="upgList"></div>
+    <button class="btn" id="upgBack">← Back</button>
   </div>
 
   <div id="toast"></div>
@@ -237,6 +294,7 @@ let W=0,H=0,DPR=1;
 const IS_NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 const IS_TOUCH = ('ontouchstart' in window) || ((navigator && navigator.maxTouchPoints) > 0);
 function plug(name){ const C=window.Capacitor; if(!IS_NATIVE||!C) return null;
+  if(window.CapPlugins && window.CapPlugins[name]) return window.CapPlugins[name];   // provided by the app's bridge.js bundle
   try{ return (C.Plugins && C.Plugins[name]) || (C.registerPlugin ? C.registerPlugin(name) : null); }catch(e){ return null; } }
 
 let SAFE_B=0;
@@ -245,6 +303,7 @@ function resize(){ const r=document.getElementById('wrap').getBoundingClientRect
   DPR = LOW() ? 1 : Math.min(window.devicePixelRatio||1,2);       // low graphics = 1x pixels (big win on hi-dpi phones)
   W=r.width; H=r.height;
   cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR); ctx.setTransform(DPR,0,0,DPR,0,0);
+  clearSprites();
   try{ SAFE_B=parseFloat(getComputedStyle(document.getElementById('safeProbe')).paddingBottom)||0; }catch(e){ SAFE_B=0; }
   if(player){ player.y=H-130-SAFE_B; player.x=laneX(player.lane); }  // keep the runner clear of the home bar
   if(isLandscapePhone() && (st==='play'||st==='countdown')) pauseGame();
@@ -309,7 +368,8 @@ function scoreMult(){ return 1+Math.min(save.mDone||0, MISSIONS.length); }
 // Belt and braces: a main + backup slot in browser storage, plus (in the app) native Preferences, which
 // the OS does NOT wipe the way it can clear WebView storage. Newest timestamp wins on load.
 const SAVE_KEY='candyRushSave';
-save = Object.assign(save, { gfx:'auto', autoLow:false, muted:false, haptics:true, savedAt:0 });
+save = Object.assign(save, { gfx:'auto', autoLow:false, muted:false, haptics:true, music:true, savedAt:0,
+  daily:{last:null, streak:0}, up:{magnet:0, x2:0, luck:0}, bestDist:0, dailyBest:null });
 (function loadLocal(){ for(const k of [SAVE_KEY, SAVE_KEY+'_bak']){
   try{ const d=JSON.parse(localStorage.getItem(k)); if(d && typeof d==='object'){ save=Object.assign(save,d); return; } }catch(e){} } })();
 function persist(){ save.savedAt=Date.now(); let s; try{ s=JSON.stringify(save); }catch(e){ return; }
@@ -328,11 +388,39 @@ function skinEmo(){ return (SKINS.find(s=>s.id===save.skin)||SKINS[0]).emo; }
 // ---------- state ----------
 const LANES=3;
 function laneX(i){ return W*(i+0.5)/LANES; }
+// ---------- dates, seeded randomness (Daily Run), upgrade levels ----------
+function nowDate(){ return new Date(); }
+function dayKey(d){ d=d||nowDate(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function niceDate(d){ d=d||nowDate(); return d.getDate()+' '+['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]; }
+function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a);
+  t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+let rng=Math.random;          // all course generation draws from this; seeded by the date in Daily Run
+let rowN=0;                   // rows spawned this run (a frame-rate-independent clock for the Daily Run)
+let runStartedAt=0, lastRunSecs=0, lastRewardedAt=0, lastInterAt=0;
+const UPG=[
+  {id:'magnet', emo:'🧲', name:'Magnet',       info:l=>'Lasts '+(7+1.5*l).toFixed(1)+'s'},
+  {id:'x2',     emo:'✨', name:'2× Score',     info:l=>'Lasts '+(8+1.5*l).toFixed(1)+'s'},
+  {id:'luck',   emo:'🍀', name:'Lucky Charm',  info:l=>'Power-ups appear '+(l?('+'+l*20+'% '):'')+'more often'}
+];
+const UPG_COST=[100,250,500,900,1500], UPG_MAX=5;
+// Daily Run uses standard power-ups so every player's run is equal
+function upLvl(id){ return mode==='daily' ? 0 : ((save.up && save.up[id])||0); }
+function powerDur(p){ return POWERS[p].dur + 1.5*upLvl(p); }
+
 let st='start';   // start | play | over | skins
 let score=0, candyScore=0, candy=0, coinsRun=0, dist=0, speed=0, baseSpeed=0, spawnT=0, spawnGap=0, playT=0, gameTime=0;
 let player, ents, parts, trail, shake, combo, comboT, usedRevive, usedDouble, bankedThisRun;
 let powers={magnet:0, x2:0}, hasShield=false;
 let safeLane=1;   // the lane the guaranteed-clear path is currently in
+let pat=null;     // current obstacle pattern (single / pinch / stagger / weave / hurdles / breather)
+let pbPassed=false; // has this run passed the personal-best marker yet?
+let assistOn=false;  // 🌱 Easy start active this run
+// Easy start: purely skill-based (never ad-based) and openly shown. Kicks in for new players whose
+// recent runs are very short; switches itself off as they improve. Never in the Daily Run (fairness).
+function wantsAssist(){ if(mode==='daily' || save.assist==='off') return false;
+  const r=(save.recentRuns||[]).slice(-3);
+  return (save.runs||0) < 15 && r.length>=2 && r.reduce((a,b)=>a+b,0)/r.length < 20; }
 // Onboarding tutorial + input buffer state
 let tut=null, tutFreeze=false, tutSpawned={low:false,high:false}, tutDoneAt=0, bufAct=null, bufT=0;
 // Mode + mission tracking
@@ -353,27 +441,27 @@ const POWER_KEYS=['magnet','shield','x2'];
 function reset(full){
   player={ lane:1, x:laneX(1), y:H-130-SAFE_B, scale:1, hurt:0, act:'run', actT:0, actDur:0, landT:0 };
   ents=[]; parts=[]; trail=[]; shake=0; combo=0; comboT=0;
-  powers={magnet:0,x2:0}; hasShield=false; safeLane=1;
+  powers={magnet:0,x2:0}; hasShield=false; safeLane=1; pat=null; prevOpen=[0,1,2]; rowN=0; pbPassed=false;
   tut=null; tutFreeze=false; tutSpawned={low:false,high:false}; tutDoneAt=0; bufAct=null; bufT=0; hideTut();
   if(full){ score=0; candyScore=0; candy=0; coinsRun=0; dist=0; playT=0; usedRevive=false; usedDouble=false; bankedThisRun=0;
-    baseScore=0; stats={jumps:0, slides:0, maxCombo:0, powers:0}; }
+    baseScore=0; stats={jumps:0, slides:0, maxCombo:0, powers:0, nearMiss:0}; }
   baseSpeed=0.30*H; speed=baseSpeed; spawnGap=0.85; spawnT=0.4;
 }
 
 // ---------- spawning ----------
 // Hazard types: 'obs' = tall block (dodge only), 'low' = gummy bar (jump over), 'high' = candy-cane arch (slide under)
 function isHazard(e){ return e.type==='obs'||e.type==='low'||e.type==='high'; }
-function spawnBlock(l){ const c=OBST_COLORS[Math.floor(Math.random()*OBST_COLORS.length)];
-  ents.push({type:'obs', lane:l, x:laneX(l), y:-60, r:46, c0:c[0], c1:c[1], rot:(Math.random()-.5)*.4}); }
+function spawnBlock(l){ const c=OBST_COLORS[Math.floor(rng()*OBST_COLORS.length)];
+  ents.push({type:'obs', lane:l, x:laneX(l), y:-60, r:46, c0:c[0], c1:c[1], rot:(rng()-.5)*.4}); }
 function spawnBarrier(kind,l0,l1,isTut){ const lw=W/LANES, x0=l0*lw+lw*0.08, x1=(l1+1)*lw-lw*0.08;
-  const e={type:kind, lane:l0, l0, l1, x:(x0+x1)/2, x0, x1, y:-60, depth:kind==='low'?26:24, seed:Math.floor(Math.random()*997)};
+  const e={type:kind, lane:l0, l0, l1, x:(x0+x1)/2, x0, x1, y:-60, depth:kind==='low'?26:24, seed:Math.floor(rng()*997)};
   ents.push(e); if(isTut) tut={e, need:kind==='low'?'jump':'slide', done:false}; return e; }
 // Mission-aware spawning: the level quietly serves the current goal so missions feel designed, not luck-based.
 function focus(){ return mode==='mission' ? MISSIONS[curMission].type : null; }
 function pickVertical(){ const f=focus();
-  if(f==='jumps') return Math.random()<0.85?'low':(save.tutSlide?'high':'low');
-  if(f==='slides' && save.tutSlide) return Math.random()<0.85?'high':'low';
-  return (save.tutSlide && Math.random()<0.5)?'high':'low'; }
+  if(f==='jumps') return rng()<0.85?'low':(save.tutSlide?'high':'low');
+  if(f==='slides' && save.tutSlide) return rng()<0.85?'high':'low';
+  return (save.tutSlide && rng()<0.5)?'high':'low'; }
 
 function spawnWave(){
   // If a tutorial barrier was wiped (shield/revive), re-arm that lesson.
@@ -384,41 +472,87 @@ function spawnWave(){
   if(tut && !tut.done) return;               // keep the screen clear while a lesson is in progress
 
   const f=focus(), trickFocus = f==='jumps'||f==='slides'||f==='tricks';
-  const vert = save.tutJump && playT>(trickFocus?5:8);   // jump/slide obstacles only once the move has been taught
+  const vert = save.tutJump && clk()>(trickFocus?5:8);   // jump/slide obstacles only once the move has been taught
   const vChance = trickFocus ? 0.72 : 0.45;               // share of hazard lanes that are bars/arches
-  // Full-width barrier: everyone must jump/slide. Candy trail behind it rewards the correct move.
-  if(vert && Math.random()<(trickFocus?0.22:0.12)){ spawnBarrier(pickVertical(),0,LANES-1,false);
-    for(let j=1;j<=3;j++) ents.push({type:'candy', lane:safeLane, x:laneX(safeLane), y:-60-j*52, r:19, emo:CANDY_EMO[(j*2)%CANDY_EMO.length], spin:0});
-    return; }
 
-  // Guarantee a clear path: the next safe lane is always within 1 of the current
-  // safe lane, so a careful player never needs to cross more than one lane per wave.
-  // The open lane must be one move away from BOTH the previous safe lane AND the lane the player is
-  // actually in (they may have wandered off for candy). With 3 lanes this intersection is never empty.
-  const near=l=>[l-1,l,l+1].filter(x=>x>=0&&x<LANES);
-  const fromPlayer=near(player.lane);
-  let reachable=near(safeLane).filter(l=>fromPlayer.includes(l));
-  if(!reachable.length) reachable=fromPlayer;
-  const newSafe=reachable[Math.floor(Math.random()*reachable.length)];
-  safeLane=newSafe;
+  // ---- Pattern engine: obstacles arrive in designed sequences, not one-off random rows ----
+  rowN++;
+  if(!pat || pat.rows<=0) pat=newPattern(vert, trickFocus);
+  pat.rows--; pat.k++;
   const used=new Set();
-  // Tall blocks (or jump/slide bars) go in any lane EXCEPT the safe lane (max 2).
-  const pool=[0,1,2].filter(l=>l!==newSafe);
-  const nObs = Math.random()<0.62 ? (Math.random()<0.5?1:2) : 0;
-  for(let k=0;k<nObs && pool.length;k++){ const idx=Math.floor(Math.random()*pool.length); const l=pool[idx]; pool.splice(idx,1);
-    used.add(l); if(!vert || Math.random()>=vChance) spawnBlock(l); else spawnBarrier(pickVertical(),l,l,false); }
-  // The safe lane may hold a PASSABLE obstacle (jump/slide) — never a tall block — so the path always exists.
-  if(vert && Math.random()<(trickFocus?0.35:0.2)){ spawnBarrier(pickVertical(),newSafe,newSafe,false); used.add(newSafe); }
-  const free=[0,1,2].filter(l=>!used.has(l));
-  const pPow = f==='powers' ? 0.13 : 0.06, pCoin = f==='coins' ? 0.30 : 0.16;
-  free.forEach(l=>{ const roll=Math.random();
-    if(roll<pPow){ const p=POWER_KEYS[Math.floor(Math.random()*POWER_KEYS.length)];
-      ents.push({type:'power', power:p, lane:l, x:laneX(l), y:-60, r:24, spin:0}); }
-    else if(roll<pPow+pCoin){ ents.push({type:'coin', lane:l, x:laneX(l), y:-60, r:17, spin:Math.random()*6}); }
-    else if(roll<0.80){ const emo=CANDY_EMO[Math.floor(Math.random()*CANDY_EMO.length)];
-      const n=Math.random()<0.4?3:1; for(let j=0;j<n;j++) ents.push({type:'candy', lane:l, x:laneX(l), y:-60-j*56, r:19, emo, spin:Math.random()*6}); }
-  });
+  const hazard=(l, allowVert)=>{ used.add(l);
+    if(allowVert && vert && rng()<vChance) spawnBarrier(pickVertical(),l,l,false); else spawnBlock(l); };
+  const candyAt=(l,y,i)=>ents.push({type:'candy', lane:l, x:laneX(l), y, r:19, emo:CANDY_EMO[(i||0)%CANDY_EMO.length], spin:0});
+  const coinAt=(l,y)=>ents.push({type:'coin', lane:l, x:laneX(l), y, r:17, spin:0});
+
+  switch(pat.type){
+    case 'hurdles': {        // full-width bars/arches in a row — jump, slide, jump… Coins sit on the line: time it to grab them.
+      let kind = !save.tutSlide ? 'low' : (pat.k%2===1 ? pat.first : (pat.first==='low'?'high':'low'));
+      if(f==='jumps') kind='low'; if(f==='slides' && save.tutSlide) kind='high';
+      spawnBarrier(kind,0,LANES-1,false);
+      coinAt(safeLane,-60); candyAt(safeLane,-112,pat.k); candyAt(safeLane,-164,pat.k+1);
+      return 1.15; }
+    case 'breather': {       // a rest beat: no hazards, just a candy zig-zag to chase
+      const seqs=[[0,1,2,1,0],[2,1,0,1,2],[1,0,1,2,1]], s=seqs[Math.floor(rng()*seqs.length)];
+      s.forEach((l,j)=>candyAt(l,-60-j*55,j)); coinAt(s[4],-60-5*55);
+      if(rng()<(f==='powers'?0.6:0.25)*(1+0.2*upLvl('luck'))) ents.push({type:'power', power:POWER_KEYS[Math.floor(rng()*3)], lane:s[2], x:laneX(s[2]), y:-60-6*55, r:24, spin:0});
+      return 1.35; }
+    case 'weave': {          // two blocks per row, the gap zig-zags one lane each row — follow the candy
+      const ns=pickSafe(l=>l!==safeLane?1:0); safeLane=ns;
+      [0,1,2].forEach(l=>{ if(l!==ns) hazard(l,false); });
+      candyAt(ns,-60,pat.k);
+      return 0.95; }
+    case 'stagger': {        // single blocks alternating left/right, tight together — a rhythm to read
+      const side=pat.side; pat.side=2-pat.side;
+      const ns=pickSafe(l=>l!==side?1:0); safeLane=ns;
+      if(ns!==side){ hazard(side,false);
+        if(rng()<0.5) coinAt(side,-60-80); }      // risky coin tucked right behind the block
+      fillCollectibles([0,1,2].filter(l=>!used.has(l)), f, true);
+      return 0.75; }
+    default: {               // 'single' teaches the input, 'pinch' leaves exactly one safe lane
+      const ns=pickSafe(); safeLane=ns;
+      const others=[0,1,2].filter(l=>l!==ns);
+      const n = pat.type==='pinch' ? 2 : 1;
+      for(let k=0;k<n;k++){ const idx=Math.floor(rng()*others.length); hazard(others.splice(idx,1)[0], true); }
+      // The safe lane may hold a PASSABLE obstacle (jump/slide) — never a tall block — so the path always exists.
+      if(vert && rng()<(trickFocus?0.35:0.2)){ spawnBarrier(pickVertical(),ns,ns,false); used.add(ns); }
+      // Risky coin: tucked just behind a tall block — slip in after it passes (the forgiving rear hitbox makes this fair)
+      if(rng()<0.3){ const blk=ents.filter(e=>e.type==='obs' && e.y===-60);
+        if(blk.length){ const b=blk[Math.floor(rng()*blk.length)]; coinAt(b.lane,-60-80); } }
+      fillCollectibles([0,1,2].filter(l=>!used.has(l)), f, false);
+      return 1; }
+  }
 }
+
+// Safe-path rule (fair by construction): when a row leaves only ONE lane open, that lane must be one move
+// away from EVERY lane the previous row left open, and from the player's current lane — so whichever open
+// lane a player chose to dodge into, they can always make it. (With 3 lanes the centre always qualifies.)
+const nearL=l=>[l-1,l,l+1].filter(x=>x>=0&&x<LANES);
+let prevOpen=[0,1,2];
+function clk(){ return mode==='daily' ? rowN*0.8 : playT; }
+function pickSafe(prefer){ const S=[...new Set(mode==='daily' ? prevOpen : [...prevOpen, player.lane])];
+  let r=[0,1,2].filter(n=>S.every(o=>Math.abs(n-o)<=1)); if(!r.length) r=nearL(player.lane);
+  if(prefer){ const best=Math.max(...r.map(prefer)); r=r.filter(l=>prefer(l)===best); }
+  return r[Math.floor(rng()*r.length)]; }
+
+// Pick the next pattern. Harder patterns unlock with time; missions about jumping/sliding get more hurdles.
+function newPattern(vert, trickFocus){ const t=clk();
+  const w=[ ['single',3], ['pinch',3], ['stagger', t>12?2:0], ['weave', t>25?1.6:0],
+            ['hurdles', vert?(trickFocus?4:1.4):0], ['breather', t>15?0.8:0] ];
+  let r=rng()*w.reduce((s,x)=>s+x[1],0), type='single';
+  for(const [k,v] of w){ if((r-=v)<0){ type=k; break; } }
+  const rows={single:1, pinch:1, stagger:4, weave:3+(rng()<0.5?1:0), hurdles:save.tutSlide?3:2, breather:1}[type];
+  return {type, rows, k:0, side:rng()<0.5?0:2, first:rng()<0.5?'low':'high'}; }
+
+function fillCollectibles(lanes, f, light){
+  const pPow = (f==='powers' ? 0.13 : 0.06)*(1+0.2*upLvl('luck')), pCoin = f==='coins' ? 0.30 : 0.16, pCandy = light ? 0.55 : 0.80;
+  lanes.forEach(l=>{ const roll=rng();
+    if(roll<pPow){ const p=POWER_KEYS[Math.floor(rng()*POWER_KEYS.length)];
+      ents.push({type:'power', power:p, lane:l, x:laneX(l), y:-60, r:24, spin:0}); }
+    else if(roll<pPow+pCoin){ ents.push({type:'coin', lane:l, x:laneX(l), y:-60, r:17, spin:rng()*6}); }
+    else if(roll<pCandy){ const emo=CANDY_EMO[Math.floor(rng()*CANDY_EMO.length)];
+      const n=rng()<0.4?3:1; for(let j=0;j<n;j++) ents.push({type:'candy', lane:l, x:laneX(l), y:-60-j*56, r:19, emo, spin:rng()*6}); }
+  }); }
 
 // ---------- input ----------
 function move(dir){ if(st!=='play'||tutFreeze)return; player.lane=Math.max(0,Math.min(LANES-1,player.lane+dir)); }
@@ -467,7 +601,7 @@ cv.addEventListener('pointercancel',()=>{ tStart=null; });
 
 // ---------- fx ----------
 function burst(x,y,color,n){ if(LOW()) n=Math.ceil(n/2); for(let i=0;i<n;i++){ const a=Math.random()*6.28, sp=60+Math.random()*180;
-  parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,life:1,color}); } }
+  addPart(x,y,Math.cos(a)*sp,Math.sin(a)*sp,1,color); } }
 function showTag(txt){ const t=document.getElementById('comboTag'); t.textContent=txt;
   t.classList.remove('show'); void t.offsetWidth; t.classList.add('show'); }
 function showCombo(n){ showTag('COMBO x'+n); }
@@ -486,7 +620,7 @@ function update(dt){
   // Constant, gentle acceleration based on TIME (not distance, which would compound):
   // speed rises a steady ~0.006*H per second, so it's smooth and never surprises.
   // ~0.45H at 25s, ~0.66H at 1min, ~1.0H at 2min, topping out at base+1.5H (~4min).
-  speed = baseSpeed + Math.min(0.006*H*playT, 1.5*H);
+  speed = baseSpeed + Math.min((assistOn?0.0048:0.006)*H*playT, 1.5*H);   // Easy start ramps a little more gently
   spawnGap = Math.max(0.34, Math.min(0.95, 275/speed));
   baseScore = Math.floor(dist/40) + candyScore;
   // Permanent multiplier boosts Infinite Run only; missions use raw score so they stay fair.
@@ -507,15 +641,20 @@ function update(dt){
   if(player.landT>0) player.landT-=dt;
   if(bufAct){ bufT-=dt; if(player.act==='run'){ const a=bufAct; bufAct=null; act(a); } else if(bufT<=0) bufAct=null; }
   if(player.act==='slide' && Math.random()<(LOW()?0.25:0.6))
-    parts.push({x:player.x+(Math.random()-.5)*34, y:player.y+20, vx:(Math.random()-.5)*50, vy:40+Math.random()*60, life:0.55, color:'rgba(255,255,255,0.85)'});
+    addPart(player.x+(Math.random()-.5)*34, player.y+20, (Math.random()-.5)*50, 40+Math.random()*60, 0.55, 'rgba(255,255,255,0.85)');
 
-  trail.unshift({x:player.x,y:player.y-liftNow()}); while(trail.length>(LOW()?6:12)) trail.pop();
+  { const TL=LOW()?6:12, tp = trail.length>=TL ? trail.pop() : {};   // reuse trail points instead of allocating
+    tp.x=player.x; tp.y=player.y-liftNow(); trail.unshift(tp); while(trail.length>TL) trail.pop(); }
 
-  spawnT-=dt; if(spawnT<=0){ spawnWave(); spawnT=spawnGap; }
+  spawnT-=dt;
+  if(spawnT<=0){ const b=ents.length, g=spawnWave();                 // each pattern sets its own spacing
+    const tall=new Set(ents.slice(b).filter(e=>e.type==='obs').map(e=>e.lane));
+    prevOpen=[0,1,2].filter(l=>!tall.has(l));                        // remember which lanes this row left open
+    spawnT = spawnGap*(g||1); }
 
   for(let i=ents.length-1;i>=0;i--){ const e=ents[i]; e.y+=speed*dt; if(e.spin!=null)e.spin+=dt*4;
     if(powers.magnet>0 && !isHazard(e)){ e.x += (player.x-e.x)*Math.min(1,dt*5); }
-    if(e.y>H+80){ ents.splice(i,1); continue; }
+    if(e.y>H+80){ removeEnt(i); continue; }
     // Position-based hitboxes: collisions use the sprite's ACTUAL x, not its logical
     // lane, so you're only hit when you physically overlap — no "moved too early" deaths.
     const dx=Math.abs(e.x-player.x), dy=Math.abs(e.y-player.y);
@@ -524,11 +663,19 @@ function update(dt){
       // without being "clipped" by a block you've visually already passed.
       const yLim = e.y > player.y ? e.r*0.5 : e.r+18;
       if(dx < e.r+16 && dy < yLim) crash();
+      // Near miss: the block passes your centre while you're mid-dodge, within a hair of touching it.
+      // From a lane centre the gap is far bigger, so this only fires on genuinely late dodges.
+      else if(!e.nm && e.y > player.y && st==='play'){ e.nm=true;
+        const gap = dx-(e.r+16);
+        if(gap>=0 && gap<36 && player.hurt<=0) nearMiss(e, mult); }
     } else if(e.type==='low' || e.type==='high'){
       const over = player.x+18>e.x0 && player.x-18<e.x1;
       if(over && dy < e.depth/2+20){
-        const ok = e.type==='low' ? (player.act==='jump' && player.actT>0.02) : (player.act==='slide');
-        if(ok) e.cleared=true; else crash();
+        const ok = e.type==='low' ? (player.act==='jump') : (player.act==='slide');
+        // Reaction grace: a jump/slide started within 60 ms of first touching the bar/arch still counts
+        // (polished runners all do this — it stops "I pressed it!" deaths, especially for younger players)
+        if(ok) e.cleared=true;
+        else { if(e.touchAt===undefined) e.touchAt=playT; if(playT-e.touchAt>0.06) crash(); }
       }
       if(!e.passed && e.y > player.y + e.depth/2 + 20){ e.passed=true;
         if(e.cleared){ if(e.type==='low') stats.jumps++; else stats.slides++; candyScore+=15*mult; burst(player.x,player.y-liftNow(),e.type==='low'?'#7CF29A':'#ff8fb0',10); beep(880,0.06,'sine'); }
@@ -541,9 +688,9 @@ function update(dt){
       const reach = (powers.magnet>0 && dx<44) ? true : (dx < e.r+28 && dy < e.r+26);
       if(reach && dy < e.r+28){
         if(e.type==='candy'){ candy++; candyScore+=10*mult; combo++; comboT=1.2; if(combo>stats.maxCombo) stats.maxCombo=combo;
-          burst(e.x,e.y,'#ffd54a',10); ents.splice(i,1); if(combo%5===0)showCombo(combo); beep(500+combo*20,0.05); }
-        else if(e.type==='coin'){ coinsRun+=mult; burst(e.x,e.y,'#ffc107',12); ents.splice(i,1); beep(700,0.06,'square'); }
-        else if(e.type==='power'){ activate(e.power); burst(e.x,e.y,'#8ed1ff',16); ents.splice(i,1); }
+          burst(e.x,e.y,'#ffd54a',10); removeEnt(i); if(combo%5===0)showCombo(combo); beep(500+combo*20,0.05); }
+        else if(e.type==='coin'){ coinsRun+=mult; burst(e.x,e.y,'#ffc107',12); removeEnt(i); beep(700,0.06,'square'); }
+        else if(e.type==='power'){ activate(e.power); burst(e.x,e.y,'#8ed1ff',16); removeEnt(i); }
       }
     }
   }
@@ -558,16 +705,35 @@ function update(dt){
 
   tickParts(dt);
 
+  // Passing your personal-best marker: celebrate once per run
+  const pbD=pbDist();
+  if(!pbPassed && pbD>300 && dist>=pbD){ pbPassed=true;
+    for(let k=0;k<3;k++) burst(laneX(k), player.y-40, '#ffd54a', 12);
+    showTag('🏆 NEW BEST!'); sweep(500,1500,0.25); buzz([20,30,20]); }
+
   // Mission goal reached → win immediately (no need to survive past the goal)
   if(mode==='mission' && st==='play'){ const m=MISSIONS[curMission]; if(mProgress(m)>=m.n) missionComplete(); }
 }
+// Particles are recycled through a pool instead of being created and thrown away (less garbage = fewer stutters)
+const PPOOL=[];
+function addPart(x,y,vx,vy,life,color){ if(parts.length>=320) return;
+  const p=PPOOL.pop()||{}; p.x=x; p.y=y; p.vx=vx; p.vy=vy; p.life=life; p.color=color; parts.push(p); }
+// O(1) removal: move the last entity into the gap (safe because the update loop walks backwards)
+function removeEnt(i){ ents[i]=ents[ents.length-1]; ents.pop(); }
 function tickParts(dt){
   for(let i=parts.length-1;i>=0;i--){ const p=parts[i]; p.x+=p.vx*dt; p.y+=p.vy*dt; p.vy+=400*dt; p.life-=dt*1.6;
-    if(p.life<=0) parts.splice(i,1); }
+    if(p.life<=0){ parts[i]=parts[parts.length-1]; parts.pop(); PPOOL.push(p); } }   // swap-remove, then recycle
   if(shake>0) shake-=dt*60;
 }
+// Distance of the personal-best marker for this mode (none in Missions)
+function pbDist(){ if(mode==='infinite') return save.bestDist||0;
+  if(mode==='daily'){ const tb=todaysBest(); return tb ? tb.dist : 0; } return 0; }
 
-function activate(p){ stats.powers++; if(p==='shield'){ hasShield=true; } else { powers[p]=POWERS[p].dur; }
+function nearMiss(e, mult){ stats.nearMiss=(stats.nearMiss||0)+1; candyScore += 25*mult;
+  const sx=(e.x+player.x)/2; for(let i=0;i<(LOW()?5:10);i++){ const a=Math.random()*6.28, sp=80+Math.random()*160;
+    addPart(sx, player.y, Math.cos(a)*sp, Math.sin(a)*sp-60, 0.8, '#ffffff'); }
+  showTag('CLOSE CALL! +'+(25*mult)); sweep(700,1400,0.12); buzz(15); }
+function activate(p){ stats.powers++; if(p==='shield'){ hasShield=true; } else { powers[p]=powerDur(p); }
   beep(900,0.12,'sine'); setTimeout(()=>beep(1200,0.1,'sine'),80); }
 
 function crash(){ if(st!=='play' || player.hurt>0) return;
@@ -599,6 +765,14 @@ function draw(){
   for(let i=1;i<LANES;i++){ const x=W*i/LANES; ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
   ctx.setLineDash([]);
 
+  // Personal-best marker: a gold line across the road where your previous best ended
+  { const pbD=pbDist(); if(pbD>300 && !pbPassed && (st==='play'||st==='countdown'||st==='paused')){ const y=player.y-(pbD-dist);
+      if(y>-30 && y<H+30){ ctx.save(); ctx.strokeStyle='rgba(255,213,74,0.95)'; ctx.lineWidth=4; ctx.setLineDash([14,10]);
+        ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle='rgba(60,20,0,0.78)'; roundRectG(ctx,8,y-27,84,22,11); ctx.fill();
+        ctx.fillStyle='#ffd54a'; ctx.font='bold 13px Trebuchet MS, sans-serif'; ctx.textAlign='left'; ctx.textBaseline='middle';
+        ctx.fillText('\u2605 BEST', 18, y-16); ctx.restore(); } } }
+
   // Depth order: ground-level things, then the player, then overhead arches (so you visibly slide UNDER them)
   ents.forEach(e=>{ if(e.type!=='high') drawEnt(e); });
 
@@ -621,7 +795,7 @@ function draw(){
   if(player.landT>0){ const k=player.landT/0.14; sx*=1+0.18*k; sy*=1-0.18*k; }   // landing squash
   ctx.scale(sx,sy);
   if(player.hurt>0 && Math.floor(player.hurt*20)%2) ctx.globalAlpha=0.4;
-  drawSkin(ctx, save.skin, 32);
+  { const s=skinSprite(); ctx.drawImage(s.c,-s.w/2,-s.h/2,s.w,s.h); }
   ctx.restore();
 
   ents.forEach(e=>{ if(e.type==='high') drawEnt(e); });
@@ -646,68 +820,91 @@ function draw(){
     mh.style.display='block';
     document.getElementById('mhText').textContent='🎯 '+m.txt+'  '+p.toLocaleString()+'/'+m.n.toLocaleString();
     document.getElementById('mhFill').style.width=(100*p/m.n).toFixed(1)+'%';
+    document.getElementById('mhBar').style.display='block';
+  } else if(mode==='daily' && (st==='play'||st==='countdown'||st==='paused')){ const tb=todaysBest();
+    mh.style.display='block'; document.getElementById('mhBar').style.display='none';
+    document.getElementById('mhText').textContent='📅 Daily Run · '+niceDate()+(tb?'  ·  Best '+tb.score.toLocaleString():'');
   } else mh.style.display='none';
 }
 
-// Low gummy bar: short shadow (it's low), green, ▲ chevrons = "jump"
-function drawLow(e){ const w=e.x1-e.x0, d=e.depth, y=e.y-d/2; ctx.save();
-  ctx.fillStyle='rgba(0,0,0,0.2)'; roundRect(e.x0+3,y+7,w,d,12); ctx.fill();
-  const g=ctx.createLinearGradient(0,y,0,y+d); g.addColorStop(0,'#9dffb5'); g.addColorStop(1,'#22b35e');
-  ctx.fillStyle=g; roundRect(e.x0,y,w,d,12); ctx.fill();
-  ctx.fillStyle='rgba(255,255,255,0.35)'; roundRect(e.x0+6,y+3,w-12,6,3); ctx.fill();
-  ctx.fillStyle='rgba(255,255,255,0.75)';
-  for(let i=0;i<Math.floor(w/14);i++){ ctx.fillRect(e.x0+8+((i*37+e.seed)%Math.max(1,w-16)), y+9+((i*13+e.seed)%Math.max(1,d-14)), 2, 2); }
-  ctx.strokeStyle='rgba(255,255,255,0.9)'; ctx.lineWidth=3; ctx.lineCap='round'; ctx.lineJoin='round';
-  const n=Math.max(1,Math.round(w/70));
-  for(let i=0;i<n;i++){ const cx=e.x0+w*(i+0.5)/n; ctx.beginPath();
-    ctx.moveTo(cx-8,y+d/2+4); ctx.lineTo(cx,y+d/2-4); ctx.lineTo(cx+8,y+d/2+4); ctx.stroke(); }
-  ctx.restore(); }
+// ---------- sprite cache ----------
+// Each obstacle / collectible / character style is painted ONCE into an offscreen image, then just copied
+// every frame. Far cheaper than rebuilding gradients, glows and emoji text 60 times a second on budget phones.
+const SPR={};
+function sprite(key,w,h,paint){ const k=key+'@'+DPR; let s=SPR[k]; if(s) return s;
+  const c=document.createElement('canvas'); c.width=Math.max(1,Math.ceil(w*DPR)); c.height=Math.max(1,Math.ceil(h*DPR));
+  const g=c.getContext('2d'); g.setTransform(DPR,0,0,DPR,0,0); paint(g); return (SPR[k]={c,w,h}); }
+function clearSprites(){ for(const k in SPR) delete SPR[k]; }
 
-// High candy-cane arch: long offset shadow (it's high), posts, red/white stripes, ▼ chevrons = "slide"
-function drawHigh(e){ const w=e.x1-e.x0, d=e.depth, y=e.y-d/2; ctx.save();
-  // soft, blurred, thin ground shadow — reads as "this is high up", never as a second obstacle
-  ctx.save(); if(!LOW()) try{ ctx.filter='blur(5px)'; }catch(_){}
-  ctx.fillStyle='rgba(0,0,0,0.10)'; roundRect(e.x0+12,y+34,w-8,d*0.6,10); ctx.fill(); ctx.restore();
-  [e.x0,e.x1].forEach(px=>{ ctx.fillStyle='#ffffff'; ctx.beginPath(); ctx.arc(px,y+d/2,9,0,6.3); ctx.fill();
-    ctx.strokeStyle='#e53935'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(px,y+d/2,6,0,6.3); ctx.stroke(); });
-  ctx.save(); roundRect(e.x0,y,w,d,10); ctx.clip();
-  ctx.fillStyle='#ffffff'; ctx.fillRect(e.x0,y,w,d);
-  ctx.fillStyle='#e53935';
-  for(let s=e.x0-d; s<e.x1+d; s+=22){ ctx.beginPath(); ctx.moveTo(s,y+d); ctx.lineTo(s+11,y+d); ctx.lineTo(s+11+d,y); ctx.lineTo(s+d,y); ctx.closePath(); ctx.fill(); }
-  ctx.fillStyle='rgba(255,255,255,0.35)'; ctx.fillRect(e.x0,y+2,w,5);
-  ctx.restore();
-  ctx.strokeStyle='rgba(120,0,0,0.35)'; ctx.lineWidth=2; roundRect(e.x0,y,w,d,10); ctx.stroke();
+// Low gummy bar: short shadow (it's low), green, ▲ chevrons = "jump". Painted with its top-left at (0,0).
+function paintLow(g,w,d,seed){
+  g.fillStyle='rgba(0,0,0,0.2)'; roundRectG(g,3,7,w,d,12); g.fill();
+  const gr=g.createLinearGradient(0,0,0,d); gr.addColorStop(0,'#9dffb5'); gr.addColorStop(1,'#22b35e');
+  g.fillStyle=gr; roundRectG(g,0,0,w,d,12); g.fill();
+  roundRectG(g,0,0,w,d,12); g.lineWidth=6; g.strokeStyle='rgba(0,40,15,0.30)'; g.stroke();
+  g.lineWidth=2.5; g.strokeStyle='rgba(255,255,255,0.9)'; g.stroke();
+  g.fillStyle='rgba(255,255,255,0.35)'; roundRectG(g,6,3,w-12,6,3); g.fill();
+  g.fillStyle='rgba(255,255,255,0.75)';
+  for(let i=0;i<Math.floor(w/14);i++){ g.fillRect(8+((i*37+seed)%Math.max(1,w-16)), 9+((i*13+seed)%Math.max(1,d-14)), 2, 2); }
+  g.strokeStyle='rgba(255,255,255,0.9)'; g.lineWidth=3; g.lineCap='round'; g.lineJoin='round';
   const n=Math.max(1,Math.round(w/70));
-  for(let i=0;i<n;i++){ const cx=e.x0+w*(i+0.5)/n;
-    ctx.fillStyle='rgba(60,0,40,0.6)'; roundRect(cx-13,y+d/2-9,26,18,9); ctx.fill();
-    ctx.strokeStyle='#fff'; ctx.lineWidth=3; ctx.lineCap='round'; ctx.lineJoin='round';
-    ctx.beginPath(); ctx.moveTo(cx-7,y+d/2-3); ctx.lineTo(cx,y+d/2+4); ctx.lineTo(cx+7,y+d/2-3); ctx.stroke(); }
-  ctx.restore(); }
+  for(let i=0;i<n;i++){ const cx=w*(i+0.5)/n; g.beginPath(); g.moveTo(cx-8,d/2+4); g.lineTo(cx,d/2-4); g.lineTo(cx+8,d/2+4); g.stroke(); } }
+function drawLow(e){ const w=Math.round(e.x1-e.x0), d=e.depth, P=10;
+  const s=sprite('low'+w, w+P*2, d+P*2+8, g=>{ g.translate(P,P); paintLow(g,w,d,7); });
+  ctx.drawImage(s.c, e.x0-P, e.y-d/2-P, s.w, s.h); }
 
-function drawEnt(e){ const x=e.x;
-    if(e.type==='low'){ drawLow(e); }
-    else if(e.type==='high'){ drawHigh(e); }
-    else if(e.type==='obs'){ ctx.save(); ctx.translate(x,e.y); ctx.rotate(e.rot);
-      const og=ctx.createLinearGradient(0,-e.r,0,e.r); og.addColorStop(0,e.c1); og.addColorStop(1,e.c0);
-      ctx.fillStyle=og; roundRect(-e.r,-e.r,e.r*2,e.r*2,14); ctx.fill();
-      ctx.fillStyle='rgba(255,255,255,0.18)'; roundRect(-e.r+6,-e.r+6,e.r*2-12,14,7); ctx.fill(); ctx.restore();
-    } else if(e.type==='coin'){ ctx.save(); ctx.translate(x,e.y);
-      ctx.shadowColor='#ffc107'; ctx.shadowBlur=LOW()?0:16;
-      const cg=ctx.createLinearGradient(0,-e.r,0,e.r); cg.addColorStop(0,'#ffe680'); cg.addColorStop(1,'#ffab00');
-      ctx.fillStyle=cg; ctx.beginPath(); ctx.arc(0,0,e.r,0,6.3); ctx.fill(); ctx.shadowBlur=0;
-      ctx.fillStyle='#b8860b'; ctx.font='bold '+(e.r*1.1)+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText('$',0,1); ctx.restore();
-    } else if(e.type==='power'){ ctx.save(); ctx.translate(x,e.y);
-      ctx.shadowColor='#8ed1ff'; ctx.shadowBlur=LOW()?0:20; ctx.fillStyle='rgba(255,255,255,0.95)';
-      ctx.beginPath(); ctx.arc(0,0,e.r,0,6.3); ctx.fill(); ctx.shadowBlur=0;
-      ctx.font=(e.r*1.3)+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText(POWERS[e.power].emo,0,1); ctx.restore();
-    } else { ctx.save(); ctx.translate(x,e.y);
-      ctx.shadowColor='#ffd54a'; ctx.shadowBlur=LOW()?0:18; ctx.fillStyle='#fff7d6';
-      ctx.beginPath(); ctx.arc(0,0,e.r,0,6.3); ctx.fill(); ctx.shadowBlur=0;
-      ctx.font=(e.r*1.5)+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-      ctx.fillText(e.emo,0,1); ctx.restore(); }
+// High candy-cane arch: soft offset shadow (it's high), posts, red/white stripes, ▼ chevrons = "slide"
+function paintHigh(g,w,d,low){
+  g.save(); if(!low) try{ g.filter='blur(5px)'; }catch(_){}
+  g.fillStyle='rgba(0,0,0,0.10)'; roundRectG(g,12,34,w-8,d*0.6,10); g.fill(); g.restore();
+  [0,w].forEach(px=>{ g.fillStyle='#ffffff'; g.beginPath(); g.arc(px,d/2,9,0,6.3); g.fill();
+    g.strokeStyle='#e53935'; g.lineWidth=3; g.beginPath(); g.arc(px,d/2,6,0,6.3); g.stroke(); });
+  g.save(); roundRectG(g,0,0,w,d,10); g.clip();
+  g.fillStyle='#ffffff'; g.fillRect(0,0,w,d); g.fillStyle='#e53935';
+  for(let s=-d; s<w+d; s+=22){ g.beginPath(); g.moveTo(s,d); g.lineTo(s+11,d); g.lineTo(s+11+d,0); g.lineTo(s+d,0); g.closePath(); g.fill(); }
+  g.fillStyle='rgba(255,255,255,0.35)'; g.fillRect(0,2,w,5); g.restore();
+  roundRectG(g,0,0,w,d,10); g.lineWidth=6; g.strokeStyle='rgba(40,0,10,0.30)'; g.stroke();
+  g.lineWidth=2; g.strokeStyle='rgba(120,0,0,0.55)'; g.stroke();
+  const n=Math.max(1,Math.round(w/70));
+  for(let i=0;i<n;i++){ const cx=w*(i+0.5)/n;
+    g.fillStyle='rgba(60,0,40,0.6)'; roundRectG(g,cx-13,d/2-9,26,18,9); g.fill();
+    g.strokeStyle='#fff'; g.lineWidth=3; g.lineCap='round'; g.lineJoin='round';
+    g.beginPath(); g.moveTo(cx-7,d/2-3); g.lineTo(cx,d/2+4); g.lineTo(cx+7,d/2-3); g.stroke(); } }
+function drawHigh(e){ const w=Math.round(e.x1-e.x0), d=e.depth, PX=16, PT=12, PB=56, L=LOW();
+  const s=sprite('high'+w+(L?'L':''), w+PX*2, d+PT+PB, g=>{ g.translate(PX,PT); paintHigh(g,w,d,L); });
+  ctx.drawImage(s.c, e.x0-PX, e.y-d/2-PT, s.w, s.h); }
+
+function drawEnt(e){
+  if(e.type==='low') return drawLow(e);
+  if(e.type==='high') return drawHigh(e);
+  const L=LOW();
+  if(e.type==='obs'){ const r=e.r, S=r*2+16;
+    const s=sprite('obs'+e.c0, S, S, g=>{ g.translate(S/2,S/2);
+      const og=g.createLinearGradient(0,-r,0,r); og.addColorStop(0,e.c1); og.addColorStop(1,e.c0);
+      g.fillStyle=og; roundRectG(g,-r,-r,r*2,r*2,14); g.fill();
+      g.fillStyle='rgba(255,255,255,0.18)'; roundRectG(g,-r+6,-r+6,r*2-12,14,7); g.fill();
+      // Double outline (dark halo + bright rim) keeps blocks readable on light AND dark backgrounds
+      roundRectG(g,-r,-r,r*2,r*2,14); g.lineWidth=7; g.strokeStyle='rgba(20,0,30,0.30)'; g.stroke();
+      g.lineWidth=3; g.strokeStyle='rgba(255,255,255,0.9)'; g.stroke(); });
+    ctx.save(); ctx.translate(e.x,e.y); ctx.rotate(e.rot); ctx.drawImage(s.c,-S/2,-S/2,S,S); ctx.restore(); return; }
+  let s;
+  if(e.type==='coin'){ const r=e.r, S=(r+20)*2;
+    s=sprite('coin'+(L?'L':''), S, S, g=>{ g.translate(S/2,S/2); if(!L){ g.shadowColor='#ffc107'; g.shadowBlur=16; }
+      const cg=g.createLinearGradient(0,-r,0,r); cg.addColorStop(0,'#ffe680'); cg.addColorStop(1,'#ffab00');
+      g.fillStyle=cg; g.beginPath(); g.arc(0,0,r,0,6.3); g.fill(); g.shadowBlur=0;
+      g.fillStyle='#b8860b'; g.font='bold '+(r*1.1)+'px serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText('$',0,1); }); }
+  else if(e.type==='power'){ const r=e.r, S=(r+22)*2;
+    s=sprite('pow'+e.power+(L?'L':''), S, S, g=>{ g.translate(S/2,S/2); if(!L){ g.shadowColor='#8ed1ff'; g.shadowBlur=20; }
+      g.fillStyle='rgba(255,255,255,0.95)'; g.beginPath(); g.arc(0,0,r,0,6.3); g.fill(); g.shadowBlur=0;
+      g.font=(r*1.3)+'px serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(POWERS[e.power].emo,0,1); }); }
+  else { const r=e.r, S=(r+20)*2;
+    s=sprite('cdy'+e.emo+(L?'L':''), S, S, g=>{ g.translate(S/2,S/2); if(!L){ g.shadowColor='#ffd54a'; g.shadowBlur=18; }
+      g.fillStyle='#fff7d6'; g.beginPath(); g.arc(0,0,r,0,6.3); g.fill(); g.shadowBlur=0;
+      g.font=(r*1.5)+'px serif'; g.textAlign='center'; g.textBaseline='middle'; g.fillText(e.emo,0,1); }); }
+  ctx.drawImage(s.c, e.x-s.w/2, e.y-s.h/2, s.w, s.h);
 }
+function skinSprite(){ const S=150; return sprite('skin'+save.skin, S, S, g=>{ g.translate(S/2,S/2); drawSkin(g, save.skin, 32); }); }
+
 function starPath(g,cx,cy,R,r,n){ g.beginPath();
   for(let i=0;i<n*2;i++){ const a=Math.PI/n*i-Math.PI/2, rad=i%2?r:R;
     const x=cx+Math.cos(a)*rad, y=cy+Math.sin(a)*rad; i?g.lineTo(x,y):g.moveTo(x,y); } g.closePath(); }
@@ -821,33 +1018,67 @@ function renderBgs(){ const grid=document.getElementById('bgGrid'); grid.innerHT
     grid.appendChild(d); }); }
 
 // ---------- flow ----------
-const SCREENS=['startScreen','overScreen','skinScreen','bgScreen','missionsScreen','winScreen','pauseScreen'];
+const SCREENS=['startScreen','overScreen','skinScreen','bgScreen','missionsScreen','winScreen','pauseScreen','dailyScreen','upgScreen','ageScreen','statsScreen'];
 function show(id){ SCREENS.forEach(x=>document.getElementById(x).classList.toggle('hide', x!==id)); }
-function startGame(m, idx){ if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}
+function dailyUnlocked(){ return !!(save.tutJump && save.tutSlide); }
+function todaysBest(){ const b=save.dailyBest; return (b && b.date===dayKey()) ? b : null; }
+function startGame(m, idx){ ensureAudio();
+  if(m==='daily' && !dailyUnlocked()){ toast('Play an Infinite Run first to learn jump & slide — then the Daily Run unlocks!'); return; }
   mode = m||'infinite'; curMission = idx||0;
+  // Daily Run: the whole course comes from today's date, so everyone plays the exact same run
+  rng = mode==='daily' ? mulberry32(hashStr('candy-daily-'+dayKey())) : Math.random;
   reset(true); st='play'; SCREENS.forEach(x=>document.getElementById(x).classList.add('hide'));
+  assistOn = wantsAssist(); if(assistOn) baseSpeed=0.26*H, speed=baseSpeed;
+  // Mystery-reward boost carries into the next non-Daily run
+  if(mode!=='daily' && save.nextBoost){ if(save.nextBoost==='shield') hasShield=true; else powers.x2=15;
+    save.nextBoost=null; persist(); }
+  runStartedAt=Date.now();
   document.getElementById('countdown').style.display='none';
   if(document.activeElement) document.activeElement.blur();   // stops Space re-"clicking" a button mid-run
   if(mode==='mission') showTag('🎯 '+MISSIONS[curMission].txt);
-  else if(scoreMult()>1) showTag('SCORE ×'+scoreMult()); }
+  else if(mode==='daily') showTag('📅 Daily Run · '+niceDate());
+  else if(assistOn) showTag('🌱 Easy start on');
+  else if(scoreMult()>1) showTag('SCORE ×'+scoreMult());
+  track('run_start',{mode, assist:assistOn?1:0}); }
 function gameOver(){ st='over'; tutFreeze=false; hideTut();
+  // run history (drives Easy start) — Daily Runs don't count, so practising them never changes difficulty
+  if(mode!=='daily'){ save.runs=(save.runs||0)+1; save.recentRuns=(save.recentRuns||[]).concat([Math.round(playT)]).slice(-5); }
+  lastRunSecs=playT;
   // Bank only coins not already banked this run (prevents double-counting after a revive).
   save.wallet += (coinsRun - bankedThisRun); bankedThisRun = coinsRun;
   if(mode==='infinite' && score>save.best) save.best=score;    // best score is an Infinite Run record
+  if(mode==='infinite' && dist>(save.bestDist||0)) save.bestDist=dist;   // where the "BEST" marker goes next time
+  let dailyMsg='';
+  if(mode==='daily'){ const tb=todaysBest();
+    if(!tb || score>tb.score){ save.dailyBest={date:dayKey(), score, dist:Math.max(dist, tb?tb.dist:0)}; dailyMsg='🎉 New best for today!'; }
+    else dailyMsg="Today's best: <b>"+tb.score.toLocaleString()+'</b>'; }
   persist();
   const isM = mode==='mission', m=MISSIONS[curMission];
-  document.getElementById('overTitle').textContent = isM ? '😢 Mission failed' : '💥 Splat!';
-  document.getElementById('overMission').innerHTML = isM ? ('🎯 '+m.txt+' — <b>'+Math.min(mProgress(m),m.n).toLocaleString()+' / '+m.n.toLocaleString()+'</b>') : '';
+  document.getElementById('overTitle').textContent = isM ? '😢 Mission failed' : mode==='daily' ? '📅 Daily Run · '+niceDate() : '💥 Splat!';
+  document.getElementById('overMission').innerHTML = isM ? ('🎯 '+m.txt+' — <b>'+Math.min(mProgress(m),m.n).toLocaleString()+' / '+m.n.toLocaleString()+'</b>') : dailyMsg;
   document.getElementById('missionsBtn2').style.display = isM ? 'inline-block' : 'none';
-  document.getElementById('retryBtn').textContent = isM ? '↻ Retry mission' : '↻ Play again';
+  document.getElementById('retryBtn').textContent = isM ? '↻ Retry mission' : mode==='daily' ? "↻ Try today's run again" : '↻ Play again';
   document.getElementById('finalScore').textContent=score;
   document.getElementById('finalCandy').textContent=candy;
   document.getElementById('finalCoins').textContent=coinsRun;
   document.getElementById('bestScore').textContent=save.best;
   document.getElementById('reviveBtn').style.display=usedRevive?'none':'inline-block';
+  // Smarter (honest) revive offer: real numbers only — nothing about the run was changed to create this moment
+  const hint = usedRevive ? '' : reviveHintText();
+  document.getElementById('reviveHint').textContent = hint;
+  document.getElementById('reviveBtn').textContent = (hint && variant('reviveLabel')==='B') ? '📺 Keep going! (watch ad)' : '📺 Revive (watch ad)';
+  track('run_end',{mode, secs:Math.round(playT), score, near_best: hint?1:0});
+  if(hint) track('revive_offer',{mode});
   document.getElementById('doubleBtn').style.display=(coinsRun>0 && !usedDouble)?'inline-block':'none';
   setTimeout(()=>{ st==='over'&&show('overScreen'); },500);
 }
+const toM=d=>Math.max(1,Math.round(d/10));   // track distance → metres shown to players
+function reviveHintText(){
+  if(mode==='mission'){ const m=MISSIONS[curMission], p=Math.min(mProgress(m),m.n), left=m.n-p;
+    return (p/m.n>=0.6 && left>0) ? 'So close! Just '+left.toLocaleString()+' more to complete this mission!' : ''; }
+  const best=pbDist(); if(best<=300) return '';
+  if(dist>=best) return '🏆 New best! Keep this run going?';
+  const gap=best-dist; return gap<=Math.max(0.35*best,200) ? 'So close! You were '+toM(gap)+'m from your best.' : ''; }
 // Rewarded-ad buttons: the reward is granted ONLY after AdMob confirms the player earned it.
 function doubleCoins(){ if(usedDouble || coinsRun<=0) return; withAd('doubleBtn', grantDoubleCoins); }
 function grantDoubleCoins(){ if(usedDouble || coinsRun<=0) return;
@@ -895,9 +1126,14 @@ function grantDoubleReward(){ if(usedDoubleReward) return;
   document.getElementById('dblRewardBtn').style.display='none';
   beep(700,0.08,'square'); setTimeout(()=>beep(1050,0.1,'square'),90); }
 function updateStartStats(){ document.getElementById('startStats').textContent =
-  'Score multiplier ×'+scoreMult()+' · Missions '+Math.min(save.mDone||0,MISSIONS.length)+'/'+MISSIONS.length; }
+  'Score multiplier ×'+scoreMult()+' · Missions '+Math.min(save.mDone||0,MISSIONS.length)+'/'+MISSIONS.length;
+  const db=document.getElementById('dailyRunBtn'), tb=todaysBest();
+  db.classList.toggle('locked', !dailyUnlocked());
+  db.textContent = !dailyUnlocked() ? '🔒 Daily Run' : tb ? '📅 Daily Run · best '+tb.score.toLocaleString() : '📅 Daily Run · '+niceDate();
+  document.getElementById('mysteryBtn').style.display = (mysteryAvailable() && save.ageBucket) ? 'inline-block' : 'none'; }
 function goMenu(){ st='start'; mode='infinite'; tutFreeze=false; hideTut();
-  document.getElementById('countdown').style.display='none'; updateStartStats(); show('startScreen'); }
+  document.getElementById('countdown').style.display='none'; updateStartStats(); show('startScreen');
+  setTimeout(()=>{ if(st==='start' && save.ageBucket) openDaily(); }, 250); }
 function renderMissions(){ const L=document.getElementById('missionList'); L.innerHTML='';
   const done=save.mDone||0;
   document.getElementById('mScreenStats').textContent = 'Multiplier ×'+scoreMult()+' — every new mission adds +1 to your Infinite Run score!';
@@ -937,6 +1173,11 @@ function setText(id,t){ const e=document.getElementById(id); if(e) e.textContent
 function refreshSettingsLabels(){
   setText('setSound', save.muted ? '🔇 Sound: Off' : '🔊 Sound: On');
   setText('setHaptics', save.haptics===false ? '📴 Vibration: Off' : '📳 Vibration: On');
+  setText('setMusic', save.music===false ? '🎵 Music: Off' : '🎵 Music: On');
+  setText('setAssist', save.assist==='off' ? '🌱 Easy start: Off' : '🌱 Easy start: Auto');
+  const ap=document.getElementById('setAdPrivacy'); if(ap) ap.style.display = Ads.privacyRequired ? 'inline-block' : 'none';
+  const ss=document.getElementById('setStats'); if(ss){ ss.style.display = save.ageBucket==='13plus' ? 'inline-block' : 'none';
+    ss.textContent = save.analytics===true ? '📊 Share stats: On' : '📊 Share stats: Off'; }
   const g=save.gfx||'auto';
   setText('setGfx', '✨ Graphics: '+(g==='auto' ? ('Auto'+(save.autoLow?' (smooth)':'')) : g==='high' ? 'High' : 'Smooth')); }
 function openPausePanel(asSettings){ settingsMode=asSettings;
@@ -951,20 +1192,47 @@ function applySettings(){ muted=!!save.muted; resize(); refreshSettingsLabels();
 // ---------- ads: AdMob rewarded via @capacitor-community/admob ----------
 // SETUP: create the app + a "Rewarded" ad unit in AdMob, paste your IDs below, then set testing:false.
 // Because the game targets children, every request is tagged child-directed with a G ("General") content cap.
+const PRIVACY_URL = 'https://alexanderjacksonproes.github.io/endless-candy-runner/privacy.html';
 const ADS_CONFIG = {
   testing: true,   // keep TRUE until real IDs are in — tapping your own live ads can get an AdMob account banned
-  rewarded: { android:'ca-app-pub-3940256099942544/5224354917', ios:'ca-app-pub-3940256099942544/1712485313' } // Google's public TEST units
+  rewarded: { android:'ca-app-pub-3940256099942544/5224354917', ios:'ca-app-pub-3940256099942544/1712485313' }, // Google's public TEST units
+  interstitial: { android:'ca-app-pub-3940256099942544/1033173712', ios:'ca-app-pub-3940256099942544/4411468910' },  // TEST units
+  // Interstitial rules (13+ ONLY): between runs, never more than one per 3 minutes, never in a player's
+  // first 3 runs, never within a minute of them watching a rewarded ad, and never after a very short run.
+  interMinGapMs: 180000, interMinRuns: 3, interAfterRewardMs: 60000, interMinRunSecs: 20
 };
 const Ads = { ready:false, loaded:false, busy:false,
   id(){ let p='android'; try{ p=window.Capacitor.getPlatform(); }catch(e){} return ADS_CONFIG.rewarded[p==='ios'?'ios':'android']; },
-  async init(){ const A=plug('AdMob'); if(!A) return;
-    try{ await A.initialize({ tagForChildDirectedTreatment:true, tagForUnderAgeOfConsent:true,
-                              maxAdContentRating:'General', initializeForTesting:ADS_CONFIG.testing });
-      let c = await A.requestConsentInfo({ tagForUnderAgeOfConsent:true });           // GDPR / UK consent (UMP)
+  async init(){ const A=plug('AdMob'); if(!A || this.started) return; this.started=true;
+    // Mixed-audience game: under-13s AND players of unknown age get child-directed, non-personalised, G-rated ads.
+    const kid = save.ageBucket!=='13plus';
+    try{ await A.initialize({ tagForChildDirectedTreatment:kid, tagForUnderAgeOfConsent:kid,
+                              maxAdContentRating: kid ? 'General' : 'ParentalGuidance', initializeForTesting:ADS_CONFIG.testing });
+      let c = await A.requestConsentInfo({ tagForUnderAgeOfConsent:kid });            // GDPR / UK consent (UMP)
       if(c && c.isConsentFormAvailable && c.status==='REQUIRED') c = await A.showConsentForm();
       this.ready = !c || c.canRequestAds!==false;
-      if(this.ready) this.preload();
+      this.privacyRequired = !!(c && c.privacyOptionsRequirementStatus==='REQUIRED');   // UK/EU: must offer a way to change consent
+      refreshSettingsLabels();
+      if(this.ready){ this.preload(); this.preloadInter(); }
     }catch(e){ this.ready=false; } },
+  interId(){ let p='android'; try{ p=window.Capacitor.getPlatform(); }catch(e){} return ADS_CONFIG.interstitial[p==='ios'?'ios':'android']; },
+  async preloadInter(){ const A=plug('AdMob'); if(!A || !this.ready || this.interLoaded || save.ageBucket!=='13plus') return;
+    try{ await A.prepareInterstitial({ adId:this.interId(), isTesting:ADS_CONFIG.testing, immersiveMode:true }); this.interLoaded=true; }
+    catch(e){ this.interLoaded=false; } },
+  interAllowed(){ const now=Date.now(), C=ADS_CONFIG;
+    return save.ageBucket==='13plus' && !!plug('AdMob') && this.ready && this.interLoaded
+      && now-lastInterAt>=C.interMinGapMs && now-lastRewardedAt>=C.interAfterRewardMs
+      && (save.runs||0)>=C.interMinRuns && lastRunSecs>=C.interMinRunSecs; },
+  // Shows an interstitial at a natural break if (and only if) every rule allows; always resolves.
+  maybeInterstitial(){ if(!this.interAllowed()) return Promise.resolve(false); const A=plug('AdMob');
+    return new Promise(async resolve=>{ let done=false; const hs=[];
+      const fin=(shown)=>{ if(done) return; done=true; hs.forEach(h=>{ try{ h.remove(); }catch(e){} });
+        this.interLoaded=false; setTimeout(()=>this.preloadInter(),800); resolve(shown); };
+      try{ hs.push(await A.addListener('interstitialAdDismissed', ()=>fin(true)));
+           hs.push(await A.addListener('interstitialAdFailedToShow', ()=>fin(false)));
+           lastInterAt=Date.now(); track('inter_shown',{});
+           await A.showInterstitial(); setTimeout(()=>fin(true),60000); }      // safety net
+      catch(e){ fin(false); } }); },
   async preload(){ const A=plug('AdMob'); if(!A || !this.ready || this.loaded) return;
     try{ await A.prepareRewardVideoAd({ adId:this.id(), isTesting:ADS_CONFIG.testing, immersiveMode:true }); this.loaded=true; }
     catch(e){ this.loaded=false; } },
@@ -985,13 +1253,13 @@ const Ads = { ready:false, loaded:false, busy:false,
 async function withAd(btnId, grant){ if(Ads.busy) return;
   const b=document.getElementById(btnId), label=b.textContent;
   Ads.busy=true; b.disabled=true; b.textContent='⏳ Loading ad…';
-  let ok=false; try{ ok=await Ads.show(); }catch(e){ ok=false; }
+  let ok=false; try{ ok=await Ads.show(); }catch(e){ ok=false; } lastRewardedAt=Date.now();
   b.disabled=false; b.textContent=label; Ads.busy=false;
-  if(ok) grant(); else toast('No ad available right now — please try again soon'); }
+  if(ok){ track('rewarded_watched',{btn:btnId}); grant(); } else toast('No ad available right now — please try again soon'); }
 
 // ---------- app lifecycle, browser gestures, Android back button ----------
 document.addEventListener('visibilitychange', ()=>{
-  if(document.hidden){ pauseGame(); persist(); }                                    // auto-pause + save when backgrounded
+  if(document.hidden){ pauseGame(); persist(); try{ if(AC) AC.suspend(); }catch(e){} }  // auto-pause, save, silence when backgrounded
   else { try{ if(AC && AC.state==='suspended' && st!=='paused') AC.resume(); }catch(e){} } });
 window.addEventListener('pagehide', ()=>{ pauseGame(); persist(); });
 // Block pull-to-refresh / page drag everywhere except scrollable menus; block pinch-zoom and long-press menus.
@@ -1004,13 +1272,132 @@ document.addEventListener('contextmenu', e=>e.preventDefault());
     App.addListener('backButton', ()=>{                       // Android hardware/gesture back
       if(st==='play'||st==='countdown') pauseGame();
       else if(st==='paused') resumeGame();
-      else if(st==='skins'||st==='bgs') backToPrev();
-      else if(st==='missions'||st==='settings'||st==='over'||st==='won') goMenu();
+      else if(st==='skins'||st==='bgs'||st==='upg') backToPrev();
+      else if(st==='missions'||st==='settings'||st==='over'||st==='won'||st==='daily') goMenu();
       else if(st==='start'){ try{ App.exitApp(); }catch(e){} } });
-    App.addListener('appStateChange', s=>{ if(s && !s.isActive){ pauseGame(); persist(); } });
+    App.addListener('appStateChange', s=>{ if(s && !s.isActive){ pauseGame(); persist(); try{ if(AC) AC.suspend(); }catch(e){} }
+      else if(s && s.isActive && st!=='paused'){ try{ if(AC) AC.resume(); }catch(e){} } });
   }catch(e){}
   const SB=plug('StatusBar'); if(SB) try{ SB.hide(); }catch(e){}
 })();
+
+// ================= NEUTRAL AGE SCREEN (Google Play Families policy, mixed audience) =================
+// Asked once, neutrally: no default year, no hint about what any answer does. Only the bucket
+// ("under13" / "13plus") is stored — never the birth year itself (data minimisation).
+function openAgeScreen(){ const sel=document.getElementById('ageYear'), Y=nowDate().getFullYear();
+  if(!sel.options || !sel.options.length){ let html='<option value="" selected disabled>Select year</option>';
+    for(let y=Y; y>=Y-100; y--) html+='<option value="'+y+'">'+y+'</option>'; sel.innerHTML=html; }
+  st='age'; show('ageScreen'); }
+function ageChosen(year){ const age = nowDate().getFullYear() - year - 1;       // conservative: assume birthday not yet reached
+  save.ageBucket = age>=13 ? '13plus' : 'under13'; persist();
+  Ads.init();                                                            // ads start only now, with the right settings
+  if(save.ageBucket==='13plus' && save.analytics==null) openStatsConsent(); else goMenu(); }
+
+// ================= ANALYTICS (13+ ONLY, OPT-IN) + A/B VARIANTS =================
+// Nothing is ever collected from under-13s or unknown ages. 13+ players are asked once, with equal
+// "yes" / "no" buttons, and can change their mind in Settings. Requires Firebase Analytics in the app
+// build with collection DISABLED by default — this code only switches it on after consent.
+function analyticsAllowed(){ return save.ageBucket==='13plus' && save.analytics===true; }
+function applyAnalyticsConsent(){ const F=plug('FirebaseAnalytics'); if(!F) return; const on=analyticsAllowed();
+  try{ F.setConsent({ type:'ANALYTICS_STORAGE', status: on?'GRANTED':'DENIED' }); }catch(e){}
+  try{ F.setEnabled({ enabled:on }); }catch(e){} }
+function track(name, params){ if(!analyticsAllowed()) return; const F=plug('FirebaseAnalytics'); if(!F) return;
+  try{ F.logEvent({ name, params:Object.assign({ v_revive:variant('reviveLabel'), v_mystery:variant('mysteryAmt') }, params||{}) }); }catch(e){} }
+// A/B variants: assigned once per player and kept. They only change reward amounts / button wording —
+// never difficulty, fairness or when a player loses.
+function variant(name){ save.exp=save.exp||{}; if(!save.exp[name]){ save.exp[name]=Math.random()<0.5?'A':'B'; persist(); } return save.exp[name]; }
+function openStatsConsent(){ st='stats'; show('statsScreen'); }
+function setStats(on){ save.analytics=!!on; persist(); applyAnalyticsConsent(); refreshSettingsLabels(); }
+
+// ================= MYSTERY REWARD (once a day, opt-in rewarded ad) =================
+// What you can get is shown on the button. Odds: 60% coins, 25% start-with-Shield, 15% start-with-2×.
+function mysteryAvailable(){ return save.mystery!==dayKey(); }
+function claimMystery(){ if(!mysteryAvailable()) return;
+  withAd('mysteryBtn', ()=>{ if(!mysteryAvailable()) return; save.mystery=dayKey();
+    const r=Math.random(); let msg;
+    if(r<0.60){ const amts = variant('mysteryAmt')==='B' ? [80,100,150,250] : [50,80,120,200];
+      const c=amts[Math.floor(Math.random()*amts.length)]; save.wallet+=c; msg='🎁 You got '+c+' coins!'; track('mystery',{kind:'coins',amount:c}); }
+    else if(r<0.85){ save.nextBoost='shield'; msg='🎁 Your next run starts with a 🛡️ Shield!'; track('mystery',{kind:'shield'}); }
+    else { save.nextBoost='x2'; msg='🎁 Your next run starts with ✨ 2× score!'; track('mystery',{kind:'x2'}); }
+    persist(); updateStartStats(); toast(msg,3200); [523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,0.12,'triangle'),i*90)); }); }
+
+// ================= RETENTION =================
+// ---------- daily reward calendar (7-day streak) ----------
+const DAILY_REW=[20,30,40,60,80,100,250];
+function dailyState(){ const d=save.daily||{last:null,streak:0}, today=dayKey();
+  if(d.last===today) return {claimable:false, day:d.streak||1};
+  const y=nowDate(); y.setDate(y.getDate()-1);
+  const cont = d.last===dayKey(y);                         // claimed yesterday → streak continues
+  return {claimable:true, day: cont ? ((d.streak||0)%7)+1 : 1, broke: !!d.last && !cont}; }
+let dailyPending=null;
+function renderDaily(day, claimed){ const G=document.getElementById('dailyGrid'); G.innerHTML='';
+  DAILY_REW.forEach((r,i)=>{ const n=i+1, t=document.createElement('div');
+    t.className='dtile'+(n<day||(claimed&&n===day)?' got':'')+(n===day&&!claimed?' today':'')+(n===7?' big':'');
+    t.innerHTML='Day '+n+'<div class="amt">'+(n<day||(claimed&&n===day)?'✅':'🪙 '+r)+'</div>'+(n===7?'<div style="font-size:11px">Big prize!</div>':'');
+    G.appendChild(t); }); }
+function openDaily(){ const s=dailyState(); if(!s.claimable) return false;
+  dailyPending=s; st='daily'; renderDaily(s.day,false);
+  document.getElementById('dailyStreak').textContent = s.broke ? 'Streak reset — come back every day to reach the Day 7 prize!'
+    : s.day===1 ? 'Come back every day for bigger rewards!' : '🔥 '+s.day+'-day streak — keep it going!';
+  document.getElementById('dailyClaim').style.display='inline-block';
+  document.getElementById('dailyDouble').style.display='none';
+  document.getElementById('dailyClose').style.display='none';
+  show('dailyScreen'); return true; }
+let dailyLastReward=0, dailyDoubled=false;
+function claimDaily(){ const s=dailyPending; if(!s) return;
+  dailyLastReward=DAILY_REW[s.day-1]; dailyDoubled=false;
+  save.wallet+=dailyLastReward; save.daily={last:dayKey(), streak:s.day}; persist(); dailyPending=null;
+  renderDaily(s.day,true); updateStartStats();
+  document.getElementById('dailyStreak').textContent='+'+dailyLastReward+' 🪙 added!'+(s.day===7?' 🎉 You completed the week!':'');
+  document.getElementById('dailyClaim').style.display='none';
+  document.getElementById('dailyDouble').style.display='inline-block';
+  document.getElementById('dailyClose').style.display='inline-block';
+  [523,659,784].forEach((f,i)=>setTimeout(()=>beep(f,0.12,'triangle'),i*100)); buzz([20,30,20]); }
+function doubleDaily(){ if(dailyDoubled||!dailyLastReward) return;
+  withAd('dailyDouble', ()=>{ if(dailyDoubled) return; dailyDoubled=true; save.wallet+=dailyLastReward; persist(); updateStartStats();
+    document.getElementById('dailyStreak').textContent='+'+(dailyLastReward*2)+' 🪙 added! (×2)';
+    document.getElementById('dailyDouble').style.display='none'; }); }
+
+// ---------- power-up upgrades ----------
+function renderUpgrades(){ const L=document.getElementById('upgList'); L.innerHTML='';
+  document.getElementById('upgWallet').textContent=save.wallet;
+  UPG.forEach(u=>{ const lvl=(save.up&&save.up[u.id])||0, max=lvl>=UPG_MAX, cost=UPG_COST[lvl];
+    const c=document.createElement('div'); c.className='ucard';
+    c.innerHTML='<div class="ue">'+u.emo+'</div><div class="ui"><div class="un">'+u.name+'</div><div class="ud">'+u.info(lvl)+
+      (max?'':' → <b>'+u.info(lvl+1).replace(/^Lasts |^Power-ups appear /,'')+'</b>')+'</div><div class="pips">'+'●'.repeat(lvl)+'○'.repeat(UPG_MAX-lvl)+'</div></div>';
+    const b=document.createElement('button');
+    if(max){ b.textContent='MAX'; b.className='max'; }
+    else { b.textContent='🪙 '+cost; if(save.wallet<cost) b.className='poor';
+      b.onclick=()=>{ if(save.wallet<cost){ beep(160,0.18,'sawtooth'); toast('Not enough coins yet — keep running!'); return; }
+        save.wallet-=cost; save.up[u.id]=lvl+1; persist(); beep(600,0.09,'square'); setTimeout(()=>beep(950,0.1,'square'),80); renderUpgrades(); }; }
+    c.appendChild(b); L.appendChild(c); }); }
+function openUpgrades(from){ prevScreen=from; st='upg'; renderUpgrades(); show('upgScreen'); }
+
+// ---------- background music: an original looping tune generated in code (no files, no licensing) ----------
+function ensureAudio(){ if(!AC){ try{ AC=new(window.AudioContext||window.webkitAudioContext)(); }catch(e){} }
+  try{ if(AC && AC.state==='suspended' && st!=='paused') AC.resume(); }catch(e){}
+  if(AC && save.music!==false) Music.start(); }
+const mf=m=>440*Math.pow(2,(m-69)/12);
+const Music={ on:false, timer:null, out:null, nextT:0, step:0,
+  // C – G – Am – F, twice; a bright, simple melody over eighth-note arpeggios
+  CH:[[60,64,67,72],[59,62,67,71],[57,60,64,69],[57,60,65,69]], BASS:[48,43,45,41],
+  MEL:[72,-1,74,76,79,-1,76,-1, 74,-1,71,74,79,-1,-1,-1, 76,-1,72,76,81,-1,79,-1, 77,-1,76,74,72,-1,-1,-1,
+       72,74,76,-1,79,81,79,-1, 74,-1,76,74,71,-1,-1,-1, 76,77,79,-1,81,-1,76,-1, 77,76,74,71,72,-1,-1,-1],
+  start(){ if(this.on||!AC) return; this.on=true; this.out=AC.createGain(); this.out.gain.value=0.5; this.out.connect(AC.destination);
+    this.nextT=AC.currentTime+0.08; this.step=0; this.timer=setInterval(()=>this.tick(),25); },
+  stop(){ this.on=false; clearInterval(this.timer); this.timer=null; if(this.out){ try{ this.out.disconnect(); }catch(e){} this.out=null; } },
+  tick(){ if(!this.on||!AC) return; const eighth=60/124/2;
+    while(this.nextT < AC.currentTime+0.12){ this.play(this.step,this.nextT); this.nextT+=eighth; this.step=(this.step+1)%64; } },
+  note(f,t,d,type,vol){ try{ const o=AC.createOscillator(), g=AC.createGain(); o.type=type; o.frequency.value=f;
+    g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(vol,t+0.012); g.gain.exponentialRampToValueAtTime(0.0001,t+d);
+    o.connect(g); g.connect(this.out); o.start(t); o.stop(t+d+0.03); }catch(e){} },
+  play(s,t){ const bar=Math.floor(s/8)%4, i=s%8, ch=this.CH[bar];
+    this.note(mf(ch[i%4]), t, 0.12, 'square', 0.018);                          // arpeggio
+    if(i===0||i===4) this.note(mf(this.BASS[bar]-12+(i===4?12:0)), t, 0.35, 'triangle', 0.07);   // bass
+    if(i===0||i===4){ try{ const o=AC.createOscillator(), g=AC.createGain(); o.frequency.setValueAtTime(130,t);   // soft kick
+      o.frequency.exponentialRampToValueAtTime(45,t+0.12); g.gain.setValueAtTime(0.09,t); g.gain.exponentialRampToValueAtTime(0.0001,t+0.14);
+      o.connect(g); g.connect(this.out); o.start(t); o.stop(t+0.16); }catch(e){} }
+    const m=this.MEL[s]; if(m>0) this.note(mf(m), t, 0.24, 'triangle', 0.05); } };
 
 let prevScreen='startScreen';
 function openSkins(from){ prevScreen=from; st='skins'; renderSkins(); show('skinScreen'); }
@@ -1025,15 +1412,33 @@ document.getElementById('settingsBack').onclick=goMenu;
 document.getElementById('setSound').onclick=()=>{ save.muted=!save.muted; muted=save.muted; persist(); refreshSettingsLabels(); if(!muted) beep(700,0.06); };
 document.getElementById('setHaptics').onclick=()=>{ save.haptics=(save.haptics===false); persist(); refreshSettingsLabels(); buzz(25); };
 document.getElementById('setGfx').onclick=()=>{ save.gfx={auto:'high',high:'low',low:'auto'}[save.gfx||'auto']; persist(); resize(); refreshSettingsLabels(); };
+document.getElementById('ageYear').onchange=e=>{ document.getElementById('ageGo').disabled = !e.target.value; };
+document.getElementById('ageGo').onclick=()=>{ const v=+document.getElementById('ageYear').value; if(v) ageChosen(v); };
+document.getElementById('dailyRunBtn').onclick=()=>startGame('daily');
+document.getElementById('upgBtn').onclick=()=>openUpgrades('startScreen');
+document.getElementById('upgBtn2').onclick=()=>openUpgrades('overScreen');
+document.getElementById('upgBack').onclick=()=>backToPrev();
+document.getElementById('dailyClaim').onclick=claimDaily;
+document.getElementById('dailyDouble').onclick=doubleDaily;
+document.getElementById('dailyClose').onclick=goMenu;
+document.getElementById('setMusic').onclick=()=>{ save.music=(save.music===false); persist(); refreshSettingsLabels();
+  if(save.music) ensureAudio(); else Music.stop(); };
 document.getElementById('startBtn').onclick=()=>startGame('infinite');
-document.getElementById('retryBtn').onclick=()=>startGame(mode,curMission);
+document.getElementById('retryBtn').onclick=()=>{ Ads.maybeInterstitial().then(()=>startGame(mode,curMission)); };
 document.getElementById('missionsBtn').onclick=openMissions;
 document.getElementById('missionsBtn2').onclick=openMissions;
 document.getElementById('missionsBtn3').onclick=openMissions;
 document.getElementById('missionsBack').onclick=goMenu;
-document.getElementById('menuBtn').onclick=goMenu;
+document.getElementById('menuBtn').onclick=()=>{ Ads.maybeInterstitial().then(goMenu); };
 document.getElementById('menuBtn2').onclick=goMenu;
-document.getElementById('nextBtn').onclick=()=>startGame('mission',curMission+1);
+document.getElementById('nextBtn').onclick=()=>{ Ads.maybeInterstitial().then(()=>startGame('mission',curMission+1)); };
+document.getElementById('mysteryBtn').onclick=claimMystery;
+document.getElementById('setPrivacy').onclick=()=>{ try{ window.open(PRIVACY_URL,'_blank'); }catch(e){} };
+document.getElementById('setAdPrivacy').onclick=async()=>{ const A=plug('AdMob'); if(!A) return; try{ await A.showPrivacyOptionsForm(); }catch(e){ toast('Privacy options are unavailable right now'); } };
+document.getElementById('statsYes').onclick=()=>{ setStats(true); goMenu(); };
+document.getElementById('statsNo').onclick=()=>{ setStats(false); goMenu(); };
+document.getElementById('setStats').onclick=()=>setStats(!(save.analytics===true));
+document.getElementById('setAssist').onclick=()=>{ save.assist = save.assist==='off' ? 'auto' : 'off'; persist(); refreshSettingsLabels(); };
 document.getElementById('dblRewardBtn').onclick=doubleReward;
 document.getElementById('reviveBtn').onclick=revive;
 document.getElementById('doubleBtn').onclick=doubleCoins;
@@ -1046,11 +1451,13 @@ document.getElementById('bgBack').onclick=backToPrev;
 
 // ---------- loop ----------
 resize(); reset(true); updateStartStats();
+setTimeout(()=>{ if(st!=='start') return; if(!save.ageBucket) openAgeScreen(); else openDaily(); }, 600);   // age once, then daily reward
 muted=!!save.muted; refreshSettingsLabels();
 if(IS_TOUCH) document.getElementById('startHint').innerHTML='Swipe ← → to switch lanes, ↑ to jump, ↓ to slide.<br>🧲 magnet · 🛡️ shield · ✨ 2× score';
-Ads.init();
+if(save.ageBucket) Ads.init();   // otherwise ads wait until the age screen is answered
+applyAnalyticsConsent();
 // iOS can suspend audio between taps — wake it on any touch
-document.addEventListener('pointerdown', ()=>{ try{ if(AC && AC.state==='suspended' && st!=='paused') AC.resume(); }catch(e){} }, true);
+document.addEventListener('pointerdown', ()=>{ if(st!=='paused') ensureAudio(); }, true);
 
 // Adaptive quality: if a device can't hold ~42fps in play, switch Auto graphics to Smooth mode automatically.
 const perf={n:0,sum:0,warm:0};
