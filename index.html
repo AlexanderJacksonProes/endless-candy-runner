@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="format-detection" content="telephone=no">
-<title>Candy Rush</title>
+<title>Endless Candy Runner</title>
 <style>
   :root { --st: env(safe-area-inset-top, 0px); --sb: env(safe-area-inset-bottom, 0px); }
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none;
@@ -57,11 +57,11 @@
   .overlay.hide { display:none; }
   /* Short phones (e.g. iPhone SE): tighter type and buttons so menus fit */
   @media (max-height:680px){
-    .overlay h1 { font-size:38px !important; } .overlay h2 { font-size:25px !important; }
+    .overlay h1 { font-size:min(38px,10.5vw) !important; } .overlay h2 { font-size:25px !important; }
     .btn { padding:12px 30px !important; font-size:17px !important; margin-top:9px !important; }
     .btn.sm, .row .btn.sm { padding:9px 13px !important; font-size:13px !important; }
     .overlay p, .hint { font-size:13px !important; } }
-  .overlay h1 { font-size:46px; font-weight:900; letter-spacing:1px; margin-bottom:6px;
+  .overlay h1 { font-size:min(46px,10.5vw); font-weight:900; white-space:nowrap; letter-spacing:1px; margin-bottom:6px;
                 background:linear-gradient(135deg,#ff9a3c,#ff6f91,#c86dd7); -webkit-background-clip:text; background-clip:text;
                 -webkit-text-fill-color:transparent; filter:drop-shadow(0 3px 8px rgba(0,0,0,.4)); }
   .overlay h2 { font-size:30px; font-weight:900; margin-bottom:10px; }
@@ -182,7 +182,7 @@
   <div id="tutHint"><div class="arrow" id="tutArrow">▲</div><div class="txt" id="tutTxt">Swipe UP to jump!</div><div class="sub" id="tutSub">or press ↑ / W / Space</div></div>
 
   <div id="startScreen" class="overlay">
-    <h1>CANDY RUSH</h1>
+    <h1>CANDY RUNNER</h1>
     <p>Dodge, jump and slide<br>through Candy Land!</p>
     <button class="btn" id="startBtn">∞ Infinite Run</button>
     <button class="btn mis" id="missionsBtn">🎯 Missions</button>
